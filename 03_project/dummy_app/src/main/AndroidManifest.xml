@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="de.devmil.parrotzik2superchargedummy">
+
+    <application android:allowBackup="true" android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher" android:theme="@style/AppTheme">
+
+        <service
+            android:name="de.devmil.parrotzik2supercharge.ApiService"
+            android:exported="true"
+            android:enabled="true">
+        </service>
+    </application>
+</manifest>

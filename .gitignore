@@ -25,3 +25,8 @@ proguard/
 
 # Log Files
 *.log
+
+#private local files
+00_source/*
+01_key/*
+07_result/*

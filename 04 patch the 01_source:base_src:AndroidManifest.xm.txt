@@ -1,0 +1,11 @@
+04 patch the 01_source/base_src/AndroidManifest.xml
+
+!!You only have to do this once!! The AndroidManifest.xml gets "rescued" each run
+
+Add this just before the application end tag (</application>)
+
+        <service
+            android:name="de.devmil.parrotzik2supercharge.ApiService"
+            android:exported="true"
+            android:enabled="true">
+        </service>
