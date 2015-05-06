@@ -1,0 +1,11 @@
+APKTool
+-------
+Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
+License: Apache 2.0 License
+see utils/APKTool_NOTICE
+
+Smali / Baksmali
+----------------
+Copyright (c) 2010 Ben Gruver
+License: The "BSD licence"
+see utils/Smali_Baksmali_NOTICE
