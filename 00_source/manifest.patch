@@ -1,0 +1,14 @@
+--- AndroidManifest.xml	2015-05-06 18:52:33.000000000 +0200
++++ AndroidManifest_patched.xml	2015-05-04 22:48:35.000000000 +0200
+@@ -62,5 +62,11 @@
+         <activity android:name="com.elinext.parrotaudiosuite.activities.UpdatingFirmwareActivity" android:screenOrientation="portrait"/>
+         <activity android:label="@string/title_activity_forgot_password" android:name="com.elinext.parrotaudiosuite.activities.ForgotPasswordActivity"/>
+         <activity android:label="@string/title_activity_term_of_use" android:name="com.elinext.parrotaudiosuite.activities.TermOfUseActivity"/>
++
++        <service
++            android:name="de.devmil.parrotzik2supercharge.ApiService"
++            android:exported="true"
++            android:enabled="true">
++        </service>
+     </application>
+ </manifest>

@@ -31,23 +31,29 @@ You can choose whatever filename and alias you like but you then have to adapt t
 
 ### 02_decompile
 This script decompiles the "base.apk" from the "00_source" directory and places the decompiled bits into the "00_source" directory.
+It also patches the AndroidManifest.xml to contain the API Service.
 
 ### 03_project
 This folder contains the Android Studio project that contains the api, the widget and the files to patch into the Parrot Zik 2 app.
 In order to go on (and every time you made any changes in the "dummy_app" that contains the patches) you have to build the "dummy_app" so that the Android build process creates the neccessary intermediate files.
 
 ### 04_patch
-You have to add the ApiService to the AndroidManifest.xml in the "00_source/base_src" directory. The exact content you have to paste into the AndroidManifest.xml is listed in the "04 patch the 01_source/base_src/AndroidManifest.xml.txt" text file.
-You have to do this step only once because each time you decompile the apk again the script rescues the AndroidManifest.xml.
+This script prepares all the patch intermediate files and copies them into the 00_source folder. 
 
-### 05_patch
-This script prepares all the patch intermediate files and copies them into the 00_source folder
-
-### 06_compile
+### 05_compile
 This script compiles and signs the apk that now contains the patch. You will be prompted to enter your keystore password.
 
-### 07_result
+### 06_result
 This folder will contain the signed and patched Parrot Zik 2 apk. You can install this apk onto your device.
+
+## Multiple steps at once
+There are two scripts that combine the steps needed to prepare and to recompile the package.
+
+### 10_prepare_original_apk
+This script checks all input files and prepares the package for patching. This step has only to be done once (as long as the source package doesn't change)
+
+### 11_patch_and_copy
+This script copies all the intermediate files from 03_project and patches the Parrot Zik 2 apk. It packages it, signs it and copies it to the 06_result folder.
 
 ## Prerequisites
 In order for the scripts to work you will have to prepare your machine.

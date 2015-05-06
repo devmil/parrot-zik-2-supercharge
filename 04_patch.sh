@@ -1,7 +1,7 @@
 #!/bin/bash
-set CONFIG=debug
+CONFIG=debug
 
-cd 03_project/dummy_app/build/intermediates/classes/debug
+cd 03_project/dummy_app/build/intermediates/classes/$CONFIG
 
 #clean up
 echo "============================"
@@ -46,7 +46,7 @@ done
 echo "============================"
 echo "Copying results"
 echo "============================"
-for f in 03_project/dummy_app/build/intermediates/classes/debug/out/de/devmil/parrotzik2supercharge/*.smali ; do
+for f in 03_project/dummy_app/build/intermediates/classes/$CONFIG/out/de/devmil/parrotzik2supercharge/*.smali ; do
 	cp $f 00_source/base_src/smali/de/devmil/parrotzik2supercharge/
 	rm $f
 done
