@@ -4,7 +4,12 @@ The scripts are currently only tested on a Mac. The possibility for the scripts 
 If anyone wants to contribute a Windows version of the scripts please feel free to do so.
 
 This project is for every Parrot Zik 2 owner that wants to get an extra bit out of their headphones.
-It contains out of
+
+##How it works
+
+![Parrot Zik 2 Patch architecture](images/API_overview.png "API architecture")
+
+It consists out of
 ### Parrot Zik 2 app patch
 A patch that extends the original Parrot Zik 2 app and adds an API Service to it
 ### API library
@@ -26,8 +31,8 @@ Instead you can install it directly from Google Play (https://play.google.com/st
 
 ### 01_key
 In order to create a patched Parrot Zik 2 apk you need to provide a keystore so that the apk can be signed.
-If you don't want to change the "06_compile" script you have to name the keystore "de.devmil.parrotzik2supercharge.keystore" and name the alias "market".
-You can choose whatever filename and alias you like but you then have to adapt the "06_compile" script accordingly.
+If you don't want to change the "05_compile" script you have to name the keystore "de.devmil.parrotzik2supercharge.keystore" and name the alias "market".
+You can choose whatever filename and alias you like but you then have to adapt the "05_compile" script accordingly.
 
 ### 02_decompile
 This script decompiles the "base.apk" from the "00_source" directory and places the decompiled bits into the "00_source" directory.
