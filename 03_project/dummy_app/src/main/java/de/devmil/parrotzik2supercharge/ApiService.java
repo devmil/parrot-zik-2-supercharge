@@ -1,5 +1,7 @@
 package de.devmil.parrotzik2supercharge;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -8,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.util.Log;
 
 import com.elinext.parrotaudiosuite.bluetooth.Connector;
@@ -15,12 +18,11 @@ import com.elinext.parrotaudiosuite.bluetooth.ZikAPI;
 import com.elinext.parrotaudiosuite.entity.ZikOptions;
 import com.elinext.parrotaudiosuite.xmlparser.ANCandAOC;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * This service is the entry point for API clients.
@@ -43,6 +45,9 @@ public class ApiService extends Service {
 
     private static String ACTION_SET_VALUE_EXTRA_NAME_NOISE_CONTROL = "noiseControl";
 
+    private static String ACTION_POLL_NOISE_CANCELLATION = "poll_noise_cancellation";
+    private static String ACTION_POLL_BATTERY_LEVEL = "poll_battery_level";
+
     private static String KEY_API_CLIENTS = "apiclients";
 
 
@@ -53,8 +58,6 @@ public class ApiService extends Service {
     private static ZikOptions mOptions;
 
     private static BroadcastReceiver mInternalReceiver;
-    private static Timer mPollTimer;
-    private static Timer mBatteryRequestTimer;
 
     private static Object mInstanceLock = new Object();
 
@@ -62,6 +65,8 @@ public class ApiService extends Service {
     private NoiseControlMode noiseControl;
 
     private boolean mLoadedState = false;
+
+    private boolean mPolling = false;
 
     public ApiService() {
         super();
@@ -134,6 +139,14 @@ public class ApiService extends Service {
 
             setData(valueName, value);
         }
+        else if(ACTION_POLL_NOISE_CANCELLATION.equals(intent.getAction()))
+        {
+            pollNoiseCancellation();
+        }
+        else if(ACTION_POLL_BATTERY_LEVEL.equals(intent.getAction()))
+        {
+            pollBatteryLevel();
+        }
 
         return result;
     }
@@ -163,6 +176,7 @@ public class ApiService extends Service {
         for(ComponentName clientName : mApiClients.keySet())
             clientSet.add(clientName.flattenToString());
         editor.putStringSet(KEY_API_CLIENTS, clientSet);
+        editor.commit();
     }
 
     private void loadApiClients()
@@ -271,7 +285,7 @@ public class ApiService extends Service {
                 mInternalReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
-                        Log.d("ApiService::InternalReceiver", String.format("Received action %s", intent.getAction()));
+                        Log.d("ApiService", String.format("Received action %s", intent.getAction()));
                         checkAsync(100);
                         ensurePolling();
                     }
@@ -292,15 +306,12 @@ public class ApiService extends Service {
 
     private void stopPolling()
     {
-        if(mPollTimer != null) {
-            mPollTimer.cancel();
-            mPollTimer.purge();
-            mPollTimer = null;
-        }
-        if(mBatteryRequestTimer != null) {
-            mBatteryRequestTimer.cancel();
-            mBatteryRequestTimer.purge();
-            mBatteryRequestTimer = null;
+        synchronized (mInstanceLock) {
+
+            stopPollingBatteryLevel();
+            stopPollingNoiseCancellation();
+
+            mPolling = false;
         }
     }
 
@@ -313,7 +324,7 @@ public class ApiService extends Service {
                 checkAsync(100);
                 stopPolling();
             }
-            else if(mPollTimer == null)
+            else if(!mPolling)
             {
                 Log.d("ApiService", "starting polling");
                 startPolling();
@@ -331,40 +342,64 @@ public class ApiService extends Service {
             {
                 return;
             }
-            //this timer polls directly the model.
-            //this is needed when the Parrot Zik app changes data that doesn't get propagated
-            //by an event (like NoiseControl Mode)
-            mPollTimer = new Timer(false);
-            mPollTimer.scheduleAtFixedRate(new TimerTask() {
-                                               @Override
-                                               public void run() {
-                                                   Log.d("ApiService::PollTimer", "starting check...");
-                                                   check();
-                                               }
-                                           },
-                    0, 10000);
 
-            //this timer triggers an battery update directly from the Zik
-            //the result then gets propagated through the broadcast event system and
-            //therefore leads to a data check and (if the data has been changed) to a
-            //listener notification
-            mBatteryRequestTimer = new Timer(false);
-            mBatteryRequestTimer.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    Log.d("ApiService::BatteryRequestTimer", "starting battery request...");
-                    if(mConnector != null
-                            && mConnector.isConnected())
-                        //send Battery request
-                        mConnector.sendData(ZikAPI.BATTERY_GET);
-                }
-            },
-            0, 30000);
+            startPollingNoiseCancellation();
+            startPollingBatteryLevel();
+
+            mPolling = true;
         }
     }
 
-    private void checkAsync(final int delayMs)
+    /*
+        this timer triggers an battery update directly from the Zik
+        the result then gets propagated through the broadcast event system and
+        therefore leads to a data check and (if the data has been changed) to a
+        listener notification
+    */
+    private void startPollingBatteryLevel() {
+        setAlarmInSeconds(this, 30, ACTION_POLL_BATTERY_LEVEL);
+    }
+
+    /* this timer polls directly the model.
+       this is needed when the Parrot Zik app changes data that doesn't get propagated
+       by an event (like NoiseControl Mode)*/
+    private void startPollingNoiseCancellation() {
+        setAlarmInSeconds(this, 10, ACTION_POLL_NOISE_CANCELLATION);
+    }
+
+    private void pollNoiseCancellation()
     {
+        synchronized (mInstanceLock) {
+            Log.d("ApiService", "Polling Noise Cancellation");
+            checkAsync(100);
+            startPollingNoiseCancellation();
+        }
+    }
+
+    private void stopPollingNoiseCancellation()
+    {
+        clearAlarm(this, ACTION_POLL_NOISE_CANCELLATION);
+    }
+
+    private void pollBatteryLevel()
+    {
+        synchronized (mInstanceLock) {
+            if (mConnector != null
+                    && mConnector.isConnected()) {
+                Log.d("ApiService", "Polling Battery level");
+                //send Battery request
+                mConnector.sendData(ZikAPI.BATTERY_GET);
+                startPollingBatteryLevel();
+            }
+        }
+    }
+
+    private void stopPollingBatteryLevel()
+    {
+        clearAlarm(this, ACTION_POLL_BATTERY_LEVEL);
+    }
+
+    private void checkAsync(final int delayMs) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -471,5 +506,48 @@ public class ApiService extends Service {
         ANCandAOC anCandAOC = mOptions.getNoiseControlState();
         anCandAOC.setType(type);
         anCandAOC.setValue(value);
+    }
+
+    //Time trigger utilities
+
+    private static void setAlarm(Context context, long triggerAtTime, String action) {
+        Intent intent = new Intent(context, ApiService.class);
+        intent.setAction(action);
+
+        PendingIntent pendingIntent = PendingIntent.getService(context, 0, intent, 0);
+
+        clearAlarms(context, pendingIntent);
+
+        AlarmManager alarms = (AlarmManager) context
+                .getSystemService(Context.ALARM_SERVICE);
+        alarms.set(AlarmManager.ELAPSED_REALTIME, triggerAtTime, pendingIntent);
+    }
+
+    private static void clearAlarm(Context context, String action) {
+        Intent intent = new Intent(context, ApiService.class);
+        intent.setAction(action);
+
+        PendingIntent pendingIntent = PendingIntent.getService(context, 0, intent, 0);
+
+        clearAlarms(context, pendingIntent);
+    }
+
+    private static void clearAlarms(Context context, PendingIntent pendingIntent) {
+        AlarmManager alarms = (AlarmManager) context
+                .getSystemService(Context.ALARM_SERVICE);
+        alarms.cancel(pendingIntent);
+    }
+
+    public static void setAlarmInSeconds(Context context, int seconds, String action) {
+        setAlarm(context, calculateUpdate(seconds), action);
+    }
+
+    private static long calculateUpdate(int inSeconds) {
+        Calendar now = Calendar.getInstance();
+        Calendar then = Calendar.getInstance();
+
+        then.add(Calendar.SECOND, inSeconds);
+
+        return SystemClock.elapsedRealtime() + (then.getTimeInMillis() - now.getTimeInMillis());
     }
 }
