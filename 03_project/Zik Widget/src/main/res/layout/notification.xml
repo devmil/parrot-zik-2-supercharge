@@ -72,6 +72,14 @@
             android:shadowRadius="4"
             android:textStyle="bold"
             android:typeface="monospace" />
+        <ImageView
+            android:id="@+id/notification_imgSoundEffect"
+            android:layout_width="70dp"
+            android:layout_height="match_parent"
+            android:scaleType="centerInside"
+            android:layout_marginRight="10dp"
+            android:layout_marginLeft="10dp"
+            />
 
         </LinearLayout>
 </RelativeLayout>

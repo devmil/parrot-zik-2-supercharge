@@ -97,6 +97,7 @@ public class WidgetUpdateService extends Service {
         configureParrotImage(rv, de.devmil.parrotzik2supercharge.widget.R.id.big_widget_imgParrotLogo);
 
         configureNoiseControlImage(rv, de.devmil.parrotzik2supercharge.widget.R.id.big_widget_image_noisecancellation);
+        configureSoundEffectImage(rv, de.devmil.parrotzik2supercharge.widget.R.id.big_widget_imgSoundEffect);
 
         configureBatteryText(rv, de.devmil.parrotzik2supercharge.widget.R.id.big_widget_text_battery);
         configureBatteryImage(rv, de.devmil.parrotzik2supercharge.widget.R.id.big_widget_imgBattery);
@@ -115,6 +116,7 @@ public class WidgetUpdateService extends Service {
         configureParrotImage(rv, de.devmil.parrotzik2supercharge.widget.R.id.notification_imgParrotLogo);
 
         configureNoiseControlImage(rv, de.devmil.parrotzik2supercharge.widget.R.id.notification_image_noisecancellation);
+        configureSoundEffectImage(rv, de.devmil.parrotzik2supercharge.widget.R.id.notification_imgSoundEffect);
 
         configureBatteryText(rv, de.devmil.parrotzik2supercharge.widget.R.id.notification_text_battery);
         configureBatteryImage(rv, de.devmil.parrotzik2supercharge.widget.R.id.notification_imgBattery);
@@ -142,6 +144,11 @@ public class WidgetUpdateService extends Service {
 
         PendingIntent toggleNCPendingIntent = PendingIntent.getService(this, 0, toggleNCIntent, 0);
         remoteViews.setOnClickPendingIntent(ncImageId, toggleNCPendingIntent);
+    }
+
+    private void configureSoundEffectImage(RemoteViews remoteViews, int seImageId)
+    {
+        remoteViews.setImageViewResource(seImageId, getSoundEffectImage());
     }
 
     private void configureBatteryText(RemoteViews remoteViews, int batteryTextViewId)
@@ -200,6 +207,13 @@ public class WidgetUpdateService extends Service {
             default:
                 return 0;
         }
+    }
+
+    public int getSoundEffectImage()
+    {
+        if(ZikApi.getSoundEffect() != null && ZikApi.getSoundEffect().isEnabled())
+            return R.drawable.soundeffect_on;
+        return R.drawable.soundeffect_off;
     }
 
     private void stopListening()

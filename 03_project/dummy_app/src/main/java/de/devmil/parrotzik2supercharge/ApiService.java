@@ -45,6 +45,8 @@ public class ApiService extends Service {
 
     private static String ACTION_SET_VALUE_EXTRA_NAME_NOISE_CONTROL = "noiseControl";
 
+    private static String ACTION_SET_VALUE_EXTRA_NAME_SOUND_EFFECT = "soundEffect";
+
     private static String ACTION_POLL_NOISE_CANCELLATION = "poll_noise_cancellation";
     private static String ACTION_POLL_BATTERY_LEVEL = "poll_battery_level";
 
@@ -203,6 +205,17 @@ public class ApiService extends Service {
             try {
                 setNoiseControl(NoiseControlMode.fromVal(Integer.parseInt(value)));
             } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else if(ACTION_SET_VALUE_EXTRA_NAME_SOUND_EFFECT.equals(valueName))
+        {
+            try
+            {
+                setSoundEffect(SoundEffect.fromString(value));
+            }
+            catch (Exception e)
+            {
                 e.printStackTrace();
             }
         }
@@ -425,7 +438,13 @@ public class ApiService extends Service {
 
         boolean isConnected = mConnector.isConnected();
 
-        ApiData result = new ApiData(batteryPercent, noiseControlMode, isConnected);
+        SoundEffectAngle soundEffectAngle = SoundEffectAngle.fromAngle(options.getAngleSoundEffect());
+        SoundEffectRoom soundEffectRoom = SoundEffectRoom.fromId(options.getRoomSizeSoundEffect());
+        boolean soundEffectEnabled = options.isSoundEffect();
+
+        SoundEffect se = new SoundEffect(soundEffectEnabled, soundEffectRoom, soundEffectAngle);
+
+        ApiData result = new ApiData(batteryPercent, noiseControlMode, isConnected, se);
 
         return result;
     }
@@ -506,6 +525,16 @@ public class ApiService extends Service {
         ANCandAOC anCandAOC = mOptions.getNoiseControlState();
         anCandAOC.setType(type);
         anCandAOC.setValue(value);
+    }
+
+    private void setSoundEffect(SoundEffect soundEffect)
+    {
+        mOptions.setSoundEffect(soundEffect.isEnabled());
+        mConnector.sendData(ZikAPI.CONCERT_HALL_ENABLED_SET, String.format("?arg=%b", soundEffect.isEnabled()));
+        mOptions.setRoomSizeSoundEffect(soundEffect.getRoom().getId());
+        mConnector.sendData(ZikAPI.CONCERT_HALL_ROOM_SET, String.format("?arg=%s", soundEffect.getRoom().getId()));
+        mOptions.setAngleSoundEffect(soundEffect.getAngle().getAngle());
+        mConnector.sendData(ZikAPI.CONCERT_HALL_ANGLE_SET, String.format("?arg=%d", soundEffect.getAngle().getAngle()));
     }
 
     //Time trigger utilities

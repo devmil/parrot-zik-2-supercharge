@@ -26,6 +26,8 @@ public class ApiResponseReceiver extends IntentService {
 
     private static String ACTION_SET_VALUE_EXTRA_NAME_NOISE_CONTROL = "noiseControl";
 
+    private static String ACTION_SET_VALUE_EXTRA_NAME_SOUND_EFFECT = "soundEffect";
+
     private static int FORCE_REFRESH_TIMEOUT_MS = 1 * 60 * 1000; //1 min
 
     public static final String PARROT_APP_PACKAGE_NAME = "com.parrot.zik2";
@@ -204,6 +206,11 @@ public class ApiResponseReceiver extends IntentService {
      */
     public static void sendNoiseControlMode(Context context, NoiseControlMode newMode) {
         sendData(context, ACTION_SET_VALUE_EXTRA_NAME_NOISE_CONTROL, newMode.getVal());
+    }
+
+    public static void sendSoundEffect(Context context, SoundEffect soundEffect)
+    {
+        sendData(context, ACTION_SET_VALUE_EXTRA_NAME_SOUND_EFFECT, soundEffect.toString());
     }
 
     private static void sendData(Context context, String valueName, int value) {

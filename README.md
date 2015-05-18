@@ -1,9 +1,12 @@
 # parrot-zik-2-supercharge
 Utilities and framework to enhance the original Parrot Zik 2 app by adding an Android API to it.
-The scripts are currently only tested on a Mac. The possibility for the scripts to work on Linux is very high.
+The scripts are currently tested on Mac and Ubuntu. They should work on any Unix based machine.
 If anyone wants to contribute a Windows version of the scripts please feel free to do so.
 
 This project is for every Parrot Zik 2 owner that wants to get an extra bit out of their headphones.
+
+##How it looks
+![Parrot Zik 2 widget Screenshot](images/Screenshot_1.png =400x)
 
 ##How it works
 

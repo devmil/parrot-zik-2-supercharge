@@ -15,11 +15,13 @@ public class ApiData {
 
     public ApiData(int batteryPercent,
                    NoiseControlMode noiseControlMode,
-                   boolean isConnected)
+                   boolean isConnected,
+                   SoundEffect soundEffect)
     {
         mBatteryPercent = batteryPercent;
         mNoiseControlMode = noiseControlMode;
         mIsConnected = isConnected;
+        mSoundEffect = soundEffect;
     }
 
     public static ApiData fromBundle(Bundle bundle) throws Exception {
@@ -27,7 +29,9 @@ public class ApiData {
         NoiseControlMode noiseControlMode = NoiseControlMode.fromVal(bundle.getInt(KEY_NOISE_CONTROL));
         boolean isConnected = bundle.getBoolean(KEY_IS_CONNECTED);
 
-        return new ApiData(batteryPercent, noiseControlMode, isConnected);
+        SoundEffect se = SoundEffect.fromBundle(bundle);
+
+        return new ApiData(batteryPercent, noiseControlMode, isConnected, se);
     }
 
     public Bundle toBundle()
@@ -38,12 +42,16 @@ public class ApiData {
         result.putInt(KEY_NOISE_CONTROL, mNoiseControlMode.getVal());
         result.putBoolean(KEY_IS_CONNECTED, mIsConnected);
 
+        Bundle soundEffectBundle = mSoundEffect.toBundle();
+        result.putAll(soundEffectBundle);
+
         return result;
     }
 
     private int mBatteryPercent;
     private NoiseControlMode mNoiseControlMode;
     private boolean mIsConnected;
+    private SoundEffect mSoundEffect;
 
 
     public int getBatteryPercent()
@@ -61,6 +69,11 @@ public class ApiData {
         return mIsConnected;
     }
 
+    public SoundEffect getSoundEffect()
+    {
+        return mSoundEffect;
+    }
+
     @Override
     public boolean equals(Object o) {
         if(o == null)
@@ -70,7 +83,8 @@ public class ApiData {
         ApiData castedObj = (ApiData)o;
         return castedObj.mBatteryPercent == mBatteryPercent
                 && castedObj.mNoiseControlMode == mNoiseControlMode
-                && castedObj.mIsConnected == mIsConnected;
+                && castedObj.mIsConnected == mIsConnected
+                && castedObj.mSoundEffect.equals(mSoundEffect);
     }
 
     @Override
@@ -79,6 +93,7 @@ public class ApiData {
         result |= mBatteryPercent;
         result |= mNoiseControlMode.getVal();
         result |= new Boolean(mIsConnected).hashCode();
+        result |= mSoundEffect.hashCode();
         return result;
     }
 }

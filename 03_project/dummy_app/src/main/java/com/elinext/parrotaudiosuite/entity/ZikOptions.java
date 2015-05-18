@@ -33,4 +33,31 @@ public class ZikOptions {
     {
         return null;
     }
+
+    public void setSoundEffect(boolean flag)
+    {
+    }
+
+    public boolean isSoundEffect()
+    {
+        return false;
+    }
+
+    public int getAngleSoundEffect()
+    {
+        return 0;
+    }
+
+    public void setAngleSoundEffect(int i)
+    {
+    }
+
+    public String getRoomSizeSoundEffect()
+    {
+        return "";
+    }
+
+    public void setRoomSizeSoundEffect(String s)
+    {
+    }
 }

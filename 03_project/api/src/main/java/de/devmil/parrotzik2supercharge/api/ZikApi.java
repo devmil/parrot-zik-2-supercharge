@@ -87,13 +87,31 @@ public abstract class ZikApi {
     }
 
     /**
-     * changes the Noise Control mode of a connected Parrot Zik
+     * changes the Noise Control mode of a connected Parrot Zik 2
      * @param context
      * @param newMode
      */
     public static void setNoiseControlMode(Context context, NoiseControlMode newMode)
     {
         ApiResponseReceiver.sendNoiseControlMode(context, newMode);
+    }
+
+    /**
+     * changes the Sound Effect settings for the connected Parrot Zik 2
+     * @param context
+     * @param soundEffect
+     */
+    public static void setSoundEffect(Context context, SoundEffect soundEffect)
+    {
+        ApiResponseReceiver.sendSoundEffect(context, soundEffect);
+    }
+
+    public static SoundEffect getSoundEffect()
+    {
+        ApiData data = ApiResponseReceiver.getLatestData();
+        if(data != null)
+            return data.getSoundEffect();
+        return null;
     }
 
     /**
