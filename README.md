@@ -6,7 +6,7 @@ If anyone wants to contribute a Windows version of the scripts please feel free 
 This project is for every Parrot Zik 2 owner that wants to get an extra bit out of their headphones.
 
 ##How it looks
-<img src="images/Screenshot_1.png" alt="Parrot Zik 2 widget Screenshot" style="width: 200px;"/>
+![Parrot Zik 2 widget Screenshot](images/Screenshot_1.png)
 
 ##How it works
 
