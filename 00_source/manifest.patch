@@ -1,10 +1,9 @@
---- AndroidManifest.xml	2015-05-06 18:52:33.000000000 +0200
-+++ AndroidManifest_patched.xml	2015-05-04 22:48:35.000000000 +0200
-@@ -62,5 +62,11 @@
-         <activity android:name="com.elinext.parrotaudiosuite.activities.UpdatingFirmwareActivity" android:screenOrientation="portrait"/>
-         <activity android:label="@string/title_activity_forgot_password" android:name="com.elinext.parrotaudiosuite.activities.ForgotPasswordActivity"/>
-         <activity android:label="@string/title_activity_term_of_use" android:name="com.elinext.parrotaudiosuite.activities.TermOfUseActivity"/>
-+
+--- AndroidManifest.xml	2015-06-12 21:17:19.000000000 +0200
++++ AndroidManifest_patched.xml	2015-06-12 21:20:54.000000000 +0200
+@@ -69,5 +69,10 @@
+                 <action android:name="com.google.android.gms.wearable.BIND_LISTENER"/>
+             </intent-filter>
+         </service>
 +        <service
 +            android:name="de.devmil.parrotzik2supercharge.ApiService"
 +            android:exported="true"

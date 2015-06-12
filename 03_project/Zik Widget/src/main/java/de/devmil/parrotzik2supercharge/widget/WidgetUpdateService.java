@@ -315,6 +315,7 @@ public class WidgetUpdateService extends Service {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
             n.category = Notification.CATEGORY_SERVICE;
+            n.visibility = Notification.VISIBILITY_PUBLIC;
         }
 
         n.flags |= Notification.FLAG_NO_CLEAR;
