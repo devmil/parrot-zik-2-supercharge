@@ -10,6 +10,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -128,22 +130,27 @@ public class WidgetUpdateService extends Service {
 
     private void configureParrotImage(RemoteViews remoteViews, int parrotImageId)
     {
+        remoteViews.setOnClickPendingIntent(parrotImageId, createOpenParrotAppPendingIntent());
+    }
+
+    private PendingIntent createOpenParrotAppPendingIntent() {
         Intent openParrotIntent = new Intent(Intent.ACTION_MAIN);
         openParrotIntent.setComponent(new ComponentName("com.parrot.zik2", "com.elinext.parrotaudiosuite.activities.SplashActivity"));
 
-        PendingIntent openParrotPendingIntent = PendingIntent.getActivity(this, 0, openParrotIntent, 0);
-
-        remoteViews.setOnClickPendingIntent(parrotImageId, openParrotPendingIntent);
+        return PendingIntent.getActivity(this, 0, openParrotIntent, 0);
     }
 
     private void configureNoiseControlImage(RemoteViews remoteViews, int ncImageId)
     {
         remoteViews.setImageViewResource(ncImageId, getNoiseControlImage());
+        remoteViews.setOnClickPendingIntent(ncImageId, createToggleNoiseCancellationPendingIntent());
+    }
+
+    private PendingIntent createToggleNoiseCancellationPendingIntent() {
         Intent toggleNCIntent = new Intent(ACTION_TOGGLE_NOISE_CANCELLATION);
         toggleNCIntent.setClass(this, WidgetUpdateService.class);
 
-        PendingIntent toggleNCPendingIntent = PendingIntent.getService(this, 0, toggleNCIntent, 0);
-        remoteViews.setOnClickPendingIntent(ncImageId, toggleNCPendingIntent);
+        return PendingIntent.getService(this, 0, toggleNCIntent, 0);
     }
 
     private void configureSoundEffectImage(RemoteViews remoteViews, int seImageId)
@@ -165,11 +172,14 @@ public class WidgetUpdateService extends Service {
 
     private void configureRefreshButton(RemoteViews remoteViews, int refreshImageId)
     {
+        remoteViews.setOnClickPendingIntent(refreshImageId, createRefreshPendingIntent());
+    }
+
+    private PendingIntent createRefreshPendingIntent() {
         Intent refreshIntent = new Intent(ACTION_REFRESH);
         refreshIntent.setClass(this, this.getClass());
 
-        PendingIntent refreshPendingIntent = PendingIntent.getService(this, 0, refreshIntent, 0);
-        remoteViews.setOnClickPendingIntent(refreshImageId, refreshPendingIntent);
+        return PendingIntent.getService(this, 0, refreshIntent, 0);
     }
 
     private void configureLayouts(RemoteViews remoteViews, int llConnectedId, int llDisconnectedId)
@@ -280,7 +290,7 @@ public class WidgetUpdateService extends Service {
 
     private void showNotification(RemoteViews widgetContent, boolean force)
     {
-        NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManagerCompat nm = NotificationManagerCompat.from(this);
         if(!showNotification(this)
                 || !ZikApi.isConnected())
         {
@@ -293,32 +303,25 @@ public class WidgetUpdateService extends Service {
                 && mLastUpdatedNotificationData.equals(ZikApi.getCurrentData()))
             return;
         mLastUpdatedNotificationData = ZikApi.getCurrentData();
-        Notification.Builder builder = new Notification.Builder(this)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .setContentTitle("Parrot Zik 2.0")
+                .setContentText("Parrot Zik 2.0 Control")
                 .setContent(widgetContent)
                 .setOngoing(true)
+                .setLocalOnly(false)
                 .setSmallIcon(de.devmil.parrotzik2supercharge.widget.R.drawable.empty);
 
-        Notification n;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             builder.setPriority(Notification.PRIORITY_MIN);
-            n = builder.build();
-        } else {
-            n = builder.getNotification();
-        }
-
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
-        {
-            n.flags |= Notification.FLAG_LOCAL_ONLY;
         }
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
-            n.category = Notification.CATEGORY_SERVICE;
-            n.visibility = Notification.VISIBILITY_PUBLIC;
+            builder.setCategory(Notification.CATEGORY_SERVICE);
+            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
         }
 
-        n.flags |= Notification.FLAG_NO_CLEAR;
+        Notification n = builder.build();
 
         if(mLastNotification != null)
             n.when = mLastNotification.when;
