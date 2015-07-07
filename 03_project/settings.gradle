@@ -1,3 +1,5 @@
 include ':dummy_app'
 include ':api'
+include ':Zik Widget Common'
+include ':Zik Widget Wear'
 include ':Zik Widget'

@@ -1,14 +1,15 @@
 package de.devmil.parrotzik2supercharge.widget;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -16,12 +17,35 @@ import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
-import de.devmil.parrotzik2supercharge.api.ApiData;
-import de.devmil.parrotzik2supercharge.api.NoiseControlMode;
-import de.devmil.parrotzik2supercharge.api.IParrotZikListener;
-import de.devmil.parrotzik2supercharge.api.ZikApi;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
 
-public class WidgetUpdateService extends Service {
+import de.devmil.parrotzik2supercharge.api.ApiData;
+import de.devmil.parrotzik2supercharge.api.IParrotZikListener;
+import de.devmil.parrotzik2supercharge.api.NoiseControlMode;
+import de.devmil.parrotzik2supercharge.api.ZikApi;
+import de.devmil.parrotzik2supercharge.widget.common.DataInterface;
+import de.devmil.parrotzik2supercharge.widget.common.DataProtocol;
+import de.devmil.parrotzik2supercharge.widget.common.ImageHelper;
+import de.devmil.parrotzik2supercharge.widget.common.StateTelegram;
+import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
+
+public class WidgetUpdateService extends Service
+        implements ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private static String ACTION_UPDATE = "com.elinext.zikwidget.UPDATE";
     private static String ACTION_STOP = "com.elinext.zikwidget.STOP";
@@ -32,7 +56,32 @@ public class WidgetUpdateService extends Service {
 
     private static int NOTIFICATION_ID_STICKY = 1000;
 
+    private GoogleApiClient mGoogleApiClient;
+
     public WidgetUpdateService() {
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
+
+        if (!mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.connect();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        if(mGoogleApiClient != null
+                && mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.disconnect();
+        }
+        super.onDestroy();
     }
 
     private IParrotZikListener mListener = null;
@@ -142,20 +191,26 @@ public class WidgetUpdateService extends Service {
 
     private void configureNoiseControlImage(RemoteViews remoteViews, int ncImageId)
     {
-        remoteViews.setImageViewResource(ncImageId, getNoiseControlImage());
-        remoteViews.setOnClickPendingIntent(ncImageId, createToggleNoiseCancellationPendingIntent());
+        remoteViews.setImageViewResource(ncImageId, ImageHelper.getNoiseControlImage(ZikApi.getNoiseControlMode() == NoiseControlMode.Street2));
+        remoteViews.setOnClickPendingIntent(ncImageId, createToggleNoiseCancellationPendingIntent(this));
     }
 
-    private PendingIntent createToggleNoiseCancellationPendingIntent() {
+    public static Intent createToggleNoiseCancellationIntent(Context context) {
         Intent toggleNCIntent = new Intent(ACTION_TOGGLE_NOISE_CANCELLATION);
-        toggleNCIntent.setClass(this, WidgetUpdateService.class);
+        toggleNCIntent.setClass(context, WidgetUpdateService.class);
 
-        return PendingIntent.getService(this, 0, toggleNCIntent, 0);
+        return toggleNCIntent;
+    }
+
+    public static PendingIntent createToggleNoiseCancellationPendingIntent(Context context) {
+
+        return PendingIntent.getService(context, 0, createToggleNoiseCancellationIntent(context), 0);
     }
 
     private void configureSoundEffectImage(RemoteViews remoteViews, int seImageId)
     {
-        remoteViews.setImageViewResource(seImageId, getSoundEffectImage());
+        boolean isActive = ZikApi.getSoundEffect() != null && ZikApi.getSoundEffect().isEnabled();
+        remoteViews.setImageViewResource(seImageId, ImageHelper.getSoundEffectImage(isActive));
     }
 
     private void configureBatteryText(RemoteViews remoteViews, int batteryTextViewId)
@@ -167,7 +222,7 @@ public class WidgetUpdateService extends Service {
     private void configureBatteryImage(RemoteViews remoteViews, int batteryImageId)
     {
         int batteryPercentage = ZikApi.getBatteryPercentage();
-        remoteViews.setImageViewResource(batteryImageId, getBatteryImage(batteryPercentage));
+        remoteViews.setImageViewResource(batteryImageId, ImageHelper.getBatteryImage(batteryPercentage));
     }
 
     private void configureRefreshButton(RemoteViews remoteViews, int refreshImageId)
@@ -187,43 +242,6 @@ public class WidgetUpdateService extends Service {
         boolean isConnected = ZikApi.isConnected();
         remoteViews.setViewVisibility(llConnectedId, isConnected ? View.VISIBLE : View.GONE);
         remoteViews.setViewVisibility(llDisconnectedId, !isConnected ? View.VISIBLE : View.GONE);
-    }
-
-    private int getBatteryImage(int batteryPercentage) {
-        if(batteryPercentage > 90)
-            return de.devmil.parrotzik2supercharge.widget.R.drawable.ic_battery_full_white_48dp;
-        if(batteryPercentage > 80)
-            return de.devmil.parrotzik2supercharge.widget.R.drawable.ic_battery_90_white_48dp;
-        else if(batteryPercentage > 60)
-            return de.devmil.parrotzik2supercharge.widget.R.drawable.ic_battery_80_white_48dp;
-        else if(batteryPercentage > 50)
-            return de.devmil.parrotzik2supercharge.widget.R.drawable.ic_battery_60_white_48dp;
-        else if(batteryPercentage > 30)
-            return de.devmil.parrotzik2supercharge.widget.R.drawable.ic_battery_50_white_48dp;
-        else if(batteryPercentage > 20)
-            return de.devmil.parrotzik2supercharge.widget.R.drawable.ic_battery_30_white_48dp;
-        else if(batteryPercentage > 10)
-            return de.devmil.parrotzik2supercharge.widget.R.drawable.ic_battery_20_white_48dp;
-        else
-            return de.devmil.parrotzik2supercharge.widget.R.drawable.ic_battery_alert_white_48dp;
-    }
-
-    public int getNoiseControlImage() {
-        switch (ZikApi.getNoiseControlMode()) {
-            case Street2:
-                return de.devmil.parrotzik2supercharge.widget.R.drawable.noisecancellation_aoc;
-            case NoiseCancelling2:
-                return de.devmil.parrotzik2supercharge.widget.R.drawable.noisecancellation_anc;
-            default:
-                return 0;
-        }
-    }
-
-    public int getSoundEffectImage()
-    {
-        if(ZikApi.getSoundEffect() != null && ZikApi.getSoundEffect().isEnabled())
-            return R.drawable.soundeffect_on;
-        return R.drawable.soundeffect_off;
     }
 
     private void stopListening()
@@ -296,6 +314,7 @@ public class WidgetUpdateService extends Service {
         {
             nm.cancel(NOTIFICATION_ID_STICKY);
             mLastUpdatedNotificationData = null;
+            hideNotificationFromWear();
             return;
         }
         if(!force
@@ -328,5 +347,83 @@ public class WidgetUpdateService extends Service {
 
         nm.notify(NOTIFICATION_ID_STICKY, n);
         mLastNotification = n;
+
+        sendNotificationToWear();
+    }
+
+    private void sendNotificationToWear() {
+        Log.d("ApiServiceWidget", "Sending notification to wear");
+        if(mGoogleApiClient != null
+            && mGoogleApiClient.isConnected()) {
+            Log.d("ApiServiceWidget", "Wear connected....");
+            PutDataMapRequest mapRequest = PutDataMapRequest.create(DataInterface.PATH_NOTIFICATION);
+
+            boolean noiseControlActive = ZikApi.getNoiseControlMode() == NoiseControlMode.Street2;
+            boolean connected = ZikApi.isConnected();
+            int batteryLevel = ZikApi.getBatteryPercentage();
+            boolean soundEffectActive = ZikApi.getSoundEffect() != null && ZikApi.getSoundEffect().isEnabled();
+
+            StateTelegram telegram = new StateTelegram(connected, noiseControlActive, batteryLevel, soundEffectActive);
+
+            DataProtocol.addTelegramToData(telegram, mapRequest.getDataMap());
+
+            PutDataRequest request = mapRequest.asPutDataRequest();
+            Log.d("ApiServiceWidget", "Posting data");
+            Wearable.DataApi.putDataItem(mGoogleApiClient, request);
+        }
+    }
+
+    private void hideNotificationFromWear() {
+        if(mGoogleApiClient != null
+                && mGoogleApiClient.isConnected()) {
+            Observable<Node> nodesObservable = Observable.create(new Observable.OnSubscribe<Node>() {
+                @Override
+                public void call(Subscriber<? super Node> subscriber) {
+                    subscriber.onStart();
+                    NodeApi.GetConnectedNodesResult nodes =
+                            Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
+                    for (Node node : nodes.getNodes()) {
+                        subscriber.onNext(node);
+                    }
+                    subscriber.unsubscribe();
+                }
+            });
+            nodesObservable.
+                    map(new Func1<Node, MessageApi.SendMessageResult>() {
+                        @Override
+                        public MessageApi.SendMessageResult call(Node node) {
+                            if(mGoogleApiClient != null
+                                    && mGoogleApiClient.isConnected()) {
+                                return Wearable.MessageApi.sendMessage(
+                                        mGoogleApiClient, node.getId(), DataInterface.PATH_DISMISS, null).await();
+                            }
+                            return null;
+                        }
+                    })
+                    .subscribeOn(Schedulers.newThread())
+                    .subscribe(new Action1<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void call(MessageApi.SendMessageResult result) {
+                            if (result == null || !result.getStatus().isSuccess()) {
+                                Log.e("ApiServiceWidget", "ERROR: failed to send Message: " + (result == null ? "NULL" : result.getStatus().toString()));
+                            }
+                        }
+                    });
+        }
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        updateWidgets(false);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+
     }
 }

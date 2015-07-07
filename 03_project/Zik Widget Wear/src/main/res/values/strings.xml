@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Zik Widget Wear</string>
+
+    <string name="hello">Hello World!</string>
+    <string name="title">Hello Notification!</string>
+    <string name="notification_posted">Notification posted</string>
+    <string name="wear_notification_activity_parrot_logo_content_description">Parrot logo</string>
+    <string name="wear_notification_activity_noise_cancellation_image_content_description">Noise cancellation state</string>
+    <string name="wear_notification_activity_battery_status_image_content_description">Battery status</string>
+    <string name="wear_notification_activity_soundeffect_state_image_content_description">Soundeffect state</string>
+</resources>

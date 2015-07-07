@@ -1,12 +1,13 @@
 apply plugin: 'com.android.application'
 
+
 android {
     compileSdkVersion 22
-    buildToolsVersion "21.1.2"
+    buildToolsVersion "22.0.1"
 
     defaultConfig {
         applicationId "de.devmil.parrotzik2supercharge.widget"
-        minSdkVersion 14
+        minSdkVersion 21
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -20,11 +21,9 @@ android {
 }
 
 dependencies {
-    compile project(':api')
-    compile project(':Zik Widget Common')
-    wearApp project(':Zik Widget Wear')
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:22.1.1'
+    compile project(':Zik Widget Common')
+    compile 'com.google.android.support:wearable:1.2.0'
     compile 'com.google.android.gms:play-services-wearable:7.5.0'
-    compile 'io.reactivex:rxandroid:0.25.0'
+    compile 'de.greenrobot:eventbus:2.4.0'
 }
