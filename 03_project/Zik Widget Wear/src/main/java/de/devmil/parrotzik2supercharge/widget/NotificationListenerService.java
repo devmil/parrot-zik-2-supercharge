@@ -19,13 +19,22 @@ import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import de.devmil.parrotzik2supercharge.widget.common.DataInterface;
 import de.devmil.parrotzik2supercharge.widget.common.DataProtocol;
 import de.devmil.parrotzik2supercharge.widget.common.StateTelegram;
 import de.devmil.parrotzik2supercharge.widget.events.ZikDataChangedEvent;
+import de.devmil.parrotzik2supercharge.widget.events.ZikDataChangedConsumedEvent;
+import de.devmil.parrotzik2supercharge.widget.events.ZikDataChangedTimeoutEvent;
 import de.greenrobot.event.EventBus;
+import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 public class NotificationListenerService extends WearableListenerService {
 
@@ -110,14 +119,82 @@ public class NotificationListenerService extends WearableListenerService {
     }
 
     private void updateOrShowNotification(DataMapItem dataMapItem) {
-        StateTelegram telegram = DataProtocol.telegramFromData(dataMapItem.getDataMap());
+        final StateTelegram telegram = DataProtocol.telegramFromData(dataMapItem.getDataMap());
 
-        ActivityState activityState = new ActivityState(this);
-        if(activityState.isActivityActive()) {
-            EventBus.getDefault().post(new ZikDataChangedEvent(telegram));
-            return;
-        }
+        Observable<Boolean> waitForResponse = Observable.create(new Observable.OnSubscribe<Boolean>() {
+            private Subscriber<? super Boolean> mActiveSubscriber;
+            private Timer mTimer;
 
+            public void onEventBackgroundThread(ZikDataChangedConsumedEvent e) {
+                Log.d(TAG, "Activity result received");
+                if(mActiveSubscriber != null) {
+                    mActiveSubscriber.onNext(true);
+                    mActiveSubscriber.unsubscribe();
+                }
+                if(mTimer != null) {
+                    mTimer.cancel();
+                    mTimer = null;
+                }
+                EventBus.getDefault().unregister(this);
+            }
+
+            public void onEventBackgroundThread(ZikDataChangedTimeoutEvent e) {
+                Log.d(TAG, "Timeout result received");
+                if(mActiveSubscriber != null) {
+                    mActiveSubscriber.onNext(false);
+                    mActiveSubscriber.unsubscribe();
+                }
+                if(mTimer != null) {
+                    mTimer.cancel();
+                    mTimer = null;
+                }
+                EventBus.getDefault().unregister(this);
+            }
+
+            @Override
+            public void call(Subscriber<? super Boolean> subscriber) {
+                subscriber.onStart();
+                Log.d(TAG, "start updating the notification or creating a new one");
+                EventBus.getDefault().register(this);
+                mActiveSubscriber = subscriber;
+
+                mTimer = new Timer("CheckActivityResultTimer");
+                mTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        Log.d(TAG, "Timeout: we have to create a new notification");
+                        EventBus.getDefault().post(new ZikDataChangedTimeoutEvent());
+                    }
+                }, 1000); //1s timeout
+
+                EventBus.getDefault().post(new ZikDataChangedEvent(telegram));
+            }
+        });
+
+        Observable<Boolean> startActivityWhenNeeded = waitForResponse.map(new Func1<Boolean, Boolean>() {
+            @Override
+            public Boolean call(Boolean isActivityPresent) {
+                if(!isActivityPresent) {
+                    Log.d(TAG, "Launching new notification (including activity)");
+                    launchActivity(telegram);
+                    return true;
+                }
+                Log.d(TAG, "Skipping creating a new activity");
+                return false;
+            }
+        });
+
+        startActivityWhenNeeded
+                .subscribeOn(Schedulers.newThread())
+                .subscribe(new Action1<Boolean>() {
+                    @Override
+                    public void call(Boolean activityStarted) {
+                        Log.d(TAG, "Updated notification." + (activityStarted ? " Activity has been recreated." : " Activity has been updated"));
+                    }
+                });
+    }
+
+    private void launchActivity(StateTelegram telegram) {
         PendingIntent pi =
                 NotificationActivity.createShowPendingIntent(
                         this,

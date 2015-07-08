@@ -15,6 +15,7 @@ import android.widget.TextView;
 import de.devmil.parrotzik2supercharge.widget.common.CommandData;
 import de.devmil.parrotzik2supercharge.widget.common.CommandSender;
 import de.devmil.parrotzik2supercharge.widget.common.ImageHelper;
+import de.devmil.parrotzik2supercharge.widget.events.ZikDataChangedConsumedEvent;
 import de.devmil.parrotzik2supercharge.widget.events.ZikDataChangedEvent;
 import de.greenrobot.event.EventBus;
 
@@ -52,7 +53,6 @@ public class NotificationActivity extends Activity {
     private TextView mTxtBattery;
     private ImageView mImgSoundEffect;
     private CommandSender mCommandSender;
-    private ActivityState mActivityState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +61,6 @@ public class NotificationActivity extends Activity {
         setContentView(R.layout.notification_activity);
 
         mCommandSender = new CommandSender(this);
-        mActivityState = new ActivityState(this);
 
         mImgNoiseCancellation = (ImageView)findViewById(R.id.wear_notification_activity_noise_cancellation_image);
         mImgBattery = (ImageView)findViewById(R.id.wear_notification_activity_battery_status_image);
@@ -90,7 +89,6 @@ public class NotificationActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Destroying activity");
-        mActivityState.setActivityActive(false);
     }
 
     @Override
@@ -98,7 +96,6 @@ public class NotificationActivity extends Activity {
         super.onResume();
         Log.d(TAG, "Resuming activity");
         EventBus.getDefault().register(this);
-        mActivityState.setActivityActive(true);
     }
 
     @Override
@@ -106,18 +103,17 @@ public class NotificationActivity extends Activity {
         super.onPause();
         Log.d(TAG, "Pausing activity");
         EventBus.getDefault().unregister(this);
-        mActivityState.setActivityActive(false);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        mActivityState.setActivityActive(false);
     }
 
     public void onEventMainThread(ZikDataChangedEvent e) {
         Log.d(TAG, "Got data update");
         setData(e.isConnected(), e.isNoiseCancellationActive(), e.getBatteryLevel(), e.isSoundEffectActive());
+        EventBus.getDefault().post(new ZikDataChangedConsumedEvent());
     }
 
     private void setData(boolean isConnected, boolean ancActive, int batteryLevel, boolean soundEffectActive) {
