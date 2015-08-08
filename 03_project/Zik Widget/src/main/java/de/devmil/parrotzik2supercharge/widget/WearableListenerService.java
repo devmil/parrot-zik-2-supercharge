@@ -11,6 +11,7 @@ import de.devmil.parrotzik2supercharge.widget.common.DataInterface;
 
 public class WearableListenerService extends com.google.android.gms.wearable.WearableListenerService {
 
+    @SuppressWarnings("FieldCanBeLocal")
     private GoogleApiClient mGoogleApiClient;
 
     public WearableListenerService() {

@@ -174,6 +174,11 @@ public class NotificationListenerService extends WearableListenerService {
         Observable<Boolean> startActivityWhenNeeded = waitForResponse.map(new Func1<Boolean, Boolean>() {
             @Override
             public Boolean call(Boolean isActivityPresent) {
+                if(isActivityPresent && !telegram.isConnected()) {
+                    Log.d(TAG, "Dismissing any notification because the Parrot Zik isn't connected");
+                    dismissNotification();
+                    return false;
+                }
                 if(!isActivityPresent) {
                     Log.d(TAG, "Launching new notification (including activity)");
                     launchActivity(telegram);

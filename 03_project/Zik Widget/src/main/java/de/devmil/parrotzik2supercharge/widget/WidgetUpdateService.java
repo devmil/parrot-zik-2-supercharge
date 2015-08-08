@@ -7,7 +7,6 @@ import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -20,9 +19,6 @@ import android.widget.RemoteViews;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
@@ -33,6 +29,7 @@ import com.google.android.gms.wearable.Wearable;
 import de.devmil.parrotzik2supercharge.api.ApiData;
 import de.devmil.parrotzik2supercharge.api.IParrotZikListener;
 import de.devmil.parrotzik2supercharge.api.NoiseControlMode;
+import de.devmil.parrotzik2supercharge.api.SoundEffect;
 import de.devmil.parrotzik2supercharge.api.ZikApi;
 import de.devmil.parrotzik2supercharge.widget.common.DataInterface;
 import de.devmil.parrotzik2supercharge.widget.common.DataProtocol;
@@ -54,6 +51,7 @@ public class WidgetUpdateService extends Service
     private static String ACTION_REFRESH = "de.devmil.parrotzik2supercharge.widget.REFRESH";
     private static String ACTION_TOGGLE_NOISE_CANCELLATION = "com.elinext.zikwidget.TOGGLE_NOISE_CANCELLATION";
 
+    @SuppressWarnings("FieldCanBeLocal")
     private static int NOTIFICATION_ID_STICKY = 1000;
 
     private GoogleApiClient mGoogleApiClient;
@@ -114,6 +112,7 @@ public class WidgetUpdateService extends Service
         return super.onStartCommand(intent, flags, startId);
     }
 
+    @SuppressWarnings("UnusedParameters")
     private static boolean showNotification(Context context)
     {
         return true;
@@ -121,13 +120,12 @@ public class WidgetUpdateService extends Service
 
     private static boolean widgetsExist(Context context)
     {
+        //noinspection ConstantConditions
         if(showNotification(context))
             return true;
         AppWidgetManager widgetManager = AppWidgetManager.getInstance(context);
         int[] appWidgetIds = widgetManager.getAppWidgetIds(new ComponentName(context, BigWidget.class));
-        if(appWidgetIds.length > 0)
-            return true;
-        return false;
+        return appWidgetIds.length > 0;
     }
 
     private void updateWidgets(boolean force) {
@@ -209,7 +207,8 @@ public class WidgetUpdateService extends Service
 
     private void configureSoundEffectImage(RemoteViews remoteViews, int seImageId)
     {
-        boolean isActive = ZikApi.getSoundEffect() != null && ZikApi.getSoundEffect().isEnabled();
+        SoundEffect soundEffect = ZikApi.getSoundEffect();
+        boolean isActive = soundEffect != null && soundEffect.isEnabled();
         remoteViews.setImageViewResource(seImageId, ImageHelper.getSoundEffectImage(isActive));
     }
 
@@ -308,7 +307,9 @@ public class WidgetUpdateService extends Service
 
     private void showNotification(RemoteViews widgetContent, boolean force)
     {
+        sendTelegramToWear(createTelegramFromCurrentState());
         NotificationManagerCompat nm = NotificationManagerCompat.from(this);
+        //noinspection ConstantConditions
         if(!showNotification(this)
                 || !ZikApi.isConnected())
         {
@@ -347,29 +348,40 @@ public class WidgetUpdateService extends Service
 
         nm.notify(NOTIFICATION_ID_STICKY, n);
         mLastNotification = n;
-
-        sendNotificationToWear();
     }
 
-    private void sendNotificationToWear() {
-        Log.d("ApiServiceWidget", "Sending notification to wear");
+    private StateTelegram mLastSentTelegram = null;
+
+    private StateTelegram createTelegramFromCurrentState() {
+        boolean noiseControlActive = ZikApi.getNoiseControlMode() == NoiseControlMode.Street2;
+        boolean connected = ZikApi.isConnected();
+        int batteryLevel = ZikApi.getBatteryPercentage();
+        SoundEffect soundEffect = ZikApi.getSoundEffect();
+        boolean soundEffectActive = ZikApi.getSoundEffect() != null && soundEffect != null && soundEffect.isEnabled();
+
+        return new StateTelegram(connected, noiseControlActive, batteryLevel, soundEffectActive);
+    }
+
+    private void sendTelegramToWear(StateTelegram telegram) {
+        Log.d("ApiServiceWidget", "Sending data to wear");
         if(mGoogleApiClient != null
-            && mGoogleApiClient.isConnected()) {
+                && mGoogleApiClient.isConnected()) {
+
             Log.d("ApiServiceWidget", "Wear connected....");
+            //just to be sure not to use more power than needed
+            if (telegram.equals(mLastSentTelegram)) {
+                Log.d("ApiServiceWidget", "Skipping Wear update as the data didn't change");
+                return;
+            }
             PutDataMapRequest mapRequest = PutDataMapRequest.create(DataInterface.PATH_NOTIFICATION);
-
-            boolean noiseControlActive = ZikApi.getNoiseControlMode() == NoiseControlMode.Street2;
-            boolean connected = ZikApi.isConnected();
-            int batteryLevel = ZikApi.getBatteryPercentage();
-            boolean soundEffectActive = ZikApi.getSoundEffect() != null && ZikApi.getSoundEffect().isEnabled();
-
-            StateTelegram telegram = new StateTelegram(connected, noiseControlActive, batteryLevel, soundEffectActive);
 
             DataProtocol.addTelegramToData(telegram, mapRequest.getDataMap());
 
             PutDataRequest request = mapRequest.asPutDataRequest();
             Log.d("ApiServiceWidget", "Posting data");
             Wearable.DataApi.putDataItem(mGoogleApiClient, request);
+
+            mLastSentTelegram = telegram;
         }
     }
 
@@ -410,6 +422,7 @@ public class WidgetUpdateService extends Service
                         }
                     });
         }
+        mLastSentTelegram = null;
     }
 
     @Override

@@ -1,14 +1,12 @@
 package de.devmil.parrotzik2supercharge.widget;
 
 import android.app.Activity;
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -110,12 +108,14 @@ public class NotificationActivity extends Activity {
         super.onStop();
     }
 
+    @SuppressWarnings("unused") //this thing gets used via EventBus
     public void onEventMainThread(ZikDataChangedEvent e) {
         Log.d(TAG, "Got data update");
         setData(e.isConnected(), e.isNoiseCancellationActive(), e.getBatteryLevel(), e.isSoundEffectActive());
         EventBus.getDefault().post(new ZikDataChangedConsumedEvent());
     }
 
+    @SuppressWarnings("UnusedParameters")
     private void setData(boolean isConnected, boolean ancActive, int batteryLevel, boolean soundEffectActive) {
         mImgNoiseCancellation.setImageResource(ImageHelper.getNoiseControlImage(ancActive));
 

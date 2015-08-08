@@ -8,6 +8,7 @@ public class ZikDataChangedEvent {
     private int batteryLevel;
     private boolean isSoundEffectActive;
 
+    @SuppressWarnings("unused")
     public ZikDataChangedEvent(boolean isConnected, boolean isNoiseCancellationActive, int batteryLevel, boolean isSoundEffectActive) {
         this.isConnected = isConnected;
         this.isNoiseCancellationActive = isNoiseCancellationActive;
