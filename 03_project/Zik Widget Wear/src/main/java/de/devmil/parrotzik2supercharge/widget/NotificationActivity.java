@@ -115,8 +115,10 @@ public class NotificationActivity extends Activity {
         EventBus.getDefault().post(new ZikDataChangedConsumedEvent());
     }
 
-    @SuppressWarnings("UnusedParameters")
     private void setData(boolean isConnected, boolean ancActive, int batteryLevel, boolean soundEffectActive) {
+        if(!isConnected) {
+            finish();
+        }
         mImgNoiseCancellation.setImageResource(ImageHelper.getNoiseControlImage(ancActive));
 
         mImgBattery.setImageResource(ImageHelper.getBatteryImage(batteryLevel));

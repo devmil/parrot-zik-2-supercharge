@@ -422,7 +422,6 @@ public class WidgetUpdateService extends Service
                         }
                     });
         }
-        mLastSentTelegram = null;
     }
 
     @Override
