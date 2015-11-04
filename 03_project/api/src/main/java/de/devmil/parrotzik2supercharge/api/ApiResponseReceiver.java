@@ -149,6 +149,7 @@ public class ApiResponseReceiver extends IntentService {
             registerIntent.putExtra(ACTION_REGISTER_RECEIVER_EXTRA_COMPONENTNAME, cn.flattenToString());
             registerIntent.putExtra(ACTION_REGISTER_RECEIVER_EXTRA_FORCE, force);
 
+            Log.d("ApiServiceReceiver", "starting parrot access service");
             context.startService(registerIntent);
         }
     }

@@ -10,7 +10,7 @@ echo "============================"
 for f in de/devmil/parrotzik2supercharge/*.dex ; do
 	rm $f
 done
-for f in de/devmil/parrotzik2supercharge/*.smali ; do
+for f in out/de/devmil/parrotzik2supercharge/*.smali ; do
 	rm $f
 done
 

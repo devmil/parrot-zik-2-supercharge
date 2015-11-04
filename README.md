@@ -1,7 +1,6 @@
 # parrot-zik-2-supercharge
 Utilities and framework to enhance the original Parrot Zik 2 app by adding an Android API to it.
-The scripts are currently tested on Mac and Ubuntu. They should work on any Unix based machine.
-If anyone wants to contribute a Windows version of the scripts please feel free to do so.
+The scripts are currently tested on Mac, Ubuntu and Windows.
 
 This project is for every Parrot Zik 2 owner that wants to get an extra bit out of their headphones.
 
@@ -12,7 +11,7 @@ This project is for every Parrot Zik 2 owner that wants to get an extra bit out 
 
 ![Parrot Zik 2 Patch architecture](images/API_overview.png "API architecture")
 
-It consists out of
+It consists of
 ### Parrot Zik 2 app patch
 A patch that extends the original Parrot Zik 2 app and adds an API Service to it
 ### API library
@@ -26,6 +25,7 @@ A first goal is to extend the API to support all possible Parrot Zik 2 parameter
 
 ## Usage
 The structure of this project replicates the steps neccessary to create your own patched Parrot Zik 2 app.
+When a Script is referred then just take the correct version for your OS (sh, cmd)
 
 ### 00_source
 Copy the original Parrot Zik 2 apk (base.apk) into this directory.
@@ -65,5 +65,5 @@ This script copies all the intermediate files from 03_project and patches the Pa
 
 ## Prerequisites
 In order for the scripts to work you will have to prepare your machine.
-You need an Java JRE so that the utilities bundled with this project can be executed.
+You need an Java JRE so that the utilities bundled with this project can be executed. You have to make sure that your path points to the bin directory (where the jarsigner tool resides)
 You need an Android sdk and one of the build-tools subdirectories (the version numbers) have to be in your path so that the dx command will work.
