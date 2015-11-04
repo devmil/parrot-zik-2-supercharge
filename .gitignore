@@ -30,3 +30,4 @@ proguard/
 00_source/*
 01_key/*
 07_result/*
+03_project/.idea/
