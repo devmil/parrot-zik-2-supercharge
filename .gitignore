@@ -31,3 +31,5 @@ proguard/
 01_key/*
 07_result/*
 03_project/.idea/
+03_project/Zik Widget/gradle.properties
+03_project/Zik Widget Wear/gradle.properties

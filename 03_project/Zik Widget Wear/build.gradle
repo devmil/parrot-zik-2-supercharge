@@ -5,6 +5,15 @@ android {
     compileSdkVersion 22
     buildToolsVersion "22.0.1"
 
+    signingConfigs {
+        release {
+            keyAlias 'market'
+            keyPassword project.property("signing.key")
+            storeFile file('../../01_key/de.devmil.parrotzik2supercharge.keystore')
+            storePassword project.property("signing.key")
+        }
+    }
+
     defaultConfig {
         applicationId "de.devmil.parrotzik2supercharge.widget"
         minSdkVersion 21
@@ -14,6 +23,7 @@ android {
     }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
