@@ -1,0 +1,3 @@
+{"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qparrot-zik-2-supercharge\nUtilities and framework to enhance the original Parrot Zik 2 app by adding an Android API to it.\\E$"}
+{"rule":"ENGLISH_WORD_REPEAT_RULE","sentence":"^\\QWidget app\nApp that contains a widget that uses the API to get the battery level and to toggle the noise cancellation mode\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QIf you don't want to change the \"05_compile\" script you have to name the keystore \"de.devmil.parrotzik2supercharge.keystore\" and name the alias \"market\".\\E$"}
